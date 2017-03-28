@@ -17,10 +17,12 @@ public static class IntAtan2Table
 	static IntAtan2Table()
 	{
 		IntAtan2Table.BITS = 7;
-		IntAtan2Table.BITS2 = IntAtan2Table.BITS << 1;
-		IntAtan2Table.MASK = ~(-1 << IntAtan2Table.BITS2);
-		IntAtan2Table.COUNT = IntAtan2Table.MASK + 1;
-		IntAtan2Table.DIM = IntMath.Sqrt((long)IntAtan2Table.COUNT);
+		IntAtan2Table.BITS2 = IntAtan2Table.BITS << 1;  //14
+		IntAtan2Table.MASK = ~(-1 << IntAtan2Table.BITS2);  //  0011111111111111 2^14-1
+		IntAtan2Table.COUNT = IntAtan2Table.MASK + 1;  //2^14
+		IntAtan2Table.DIM = IntMath.Sqrt((long)IntAtan2Table.COUNT);  //2^7 = 128
+        //这是个128*128的二维表，y是行标，x是列标,只是记录了第一象限的值，其他象限可以反推
+        //因为tan值是有极限值无穷大的，所以无法索引，干脆用xy作为输入查表，想到这个办法的人真是天才
 		IntAtan2Table.table = new int[]
 		{
 			0,

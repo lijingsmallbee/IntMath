@@ -11,38 +11,52 @@ public class IntMath
 		{
 			if (y < 0)
 			{
+                //第三象限
 				x = -x;
 				y = -y;
 				num = 1;
 			}
 			else
 			{
+                //第二象限
 				x = -x;
 				num = -1;
 			}
+            //-PI 乘以10000
 			num2 = -31416;
 		}
 		else
 		{
 			if (y < 0)
 			{
+                //第四象限
 				y = -y;
 				num = -1;
 			}
 			else
 			{
+                //第一象限
 				num = 1;
 			}
 			num2 = 0;
 		}
-		int dIM = IntAtan2Table.DIM;
-		long num3 = (long)(dIM - 1);
+		int dIM = IntAtan2Table.DIM;   //2^7 = 128
+		long num3 = (long)(dIM - 1);  //127
+        //下边这段的意思是，把xy归一化后映射到0-127闭区间上，然后去查表
+        //y做行，x做列去查询设置好的二维表
 		long b = (long)((x >= y) ? x : y);
 		int num4 = (int)IntMath.Divide((long)x * num3, b);
 		int num5 = (int)IntMath.Divide((long)y * num3, b);
 		int num6 = IntAtan2Table.table[num5 * dIM + num4];
 		return new IntFactor
 		{
+            //num2的意思是，不同象限通过第一象限的值进行反推的计算公式不一样
+            //如果想要得到以x轴为0度，向上为0~180，向下是 0~-180度的结果
+            //这个跟几何书上1-4象限是 0-360度的表示方法不太一样
+            //第一象限假设结果是angle，代表从x轴转向该向量的角度是angle，num
+            //第二象限，绝对值相同的tan值对应的角度是 PI-angle，num2 = -PI，num = -1
+            //第三象限，绝对值相同的tan值对应的角度是 -PI+angle，num2 = -PI，num = 1
+            //第四象限，绝对值相同的tan值对应的角度是 -angle， num2 = 0，num = -1
 			numerator = (long)((num6 + num2) * num),
 			denominator = 10000L
 		};
@@ -50,7 +64,11 @@ public class IntMath
 
 	public static IntFactor acos(long nom, long den)
 	{
-		int num = (int)IntMath.Divide(nom * (long)IntAcosTable.HALF_COUNT, den) + IntAcosTable.HALF_COUNT;
+        //计算acos就比较简单了，因为cos的取值就是-1~1，不存在无穷的问题
+        //如果把cos比作x/length,当length等于1的时候，x就是cos值，所以只需要把-1~1平均分成IntAcosTable.COUNT份
+        //然后做一个-1~1与0~IntAcosTable.COUNT的映射即可，该函数的功能就是做这个映射
+        //由于cos函数与角度不是线性的，即两者的变化率不一样，所以多少有点值分配不均匀的问题，不过分成1024份，影响不大
+        int num = (int)IntMath.Divide(nom * (long)IntAcosTable.HALF_COUNT, den) + IntAcosTable.HALF_COUNT;
 		num = Mathf.Clamp(num, 0, IntAcosTable.COUNT);
 		return new IntFactor
 		{
@@ -62,13 +80,15 @@ public class IntMath
 
     public static IntFactor sin(long nom, long den)
 	{
+        //索引值求的原理见对应函数内注释 
 		int index = IntSinCosTable.getIndex(nom, den);
 		return new IntFactor((long)IntSinCosTable.sin_table[index], (long)IntSinCosTable.FACTOR);
 	}
 
 	public static IntFactor cos(long nom, long den)
 	{
-		int index = IntSinCosTable.getIndex(nom, den);
+        //索引值求的原理见对应函数内注释 
+        int index = IntSinCosTable.getIndex(nom, den);
 		return new IntFactor((long)IntSinCosTable.cos_table[index], (long)IntSinCosTable.FACTOR);
 	}
 
@@ -88,6 +108,7 @@ public class IntMath
 
 	public static long Divide(long a, long b)
 	{
+        //这个表示看不懂
 		long num = (long)((ulong)((a ^ b) & -9223372036854775808L) >> 63);
 		long num2 = num * -2L + 1L;
 		return (a + b / 2L * num2) / b;
@@ -141,6 +162,7 @@ public class IntMath
 
 	public static uint Sqrt32(uint a)
 	{
+        //经典的逐位确认法
 		uint num = 0u;
 		uint num2 = 0u;
 		for (int i = 0; i < 16; i++)
@@ -161,7 +183,8 @@ public class IntMath
 
 	public static ulong Sqrt64(ulong a)
 	{
-		ulong num = 0uL;
+        //经典的逐位确认法
+        ulong num = 0uL;
 		ulong num2 = 0uL;
 		for (int i = 0; i < 32; i++)
 		{
@@ -225,6 +248,7 @@ public class IntMath
 
 	public static IVector3 Transform(ref IVector3 point, ref IVector3 axis_x, ref IVector3 axis_y, ref IVector3 axis_z, ref IVector3 trans)
 	{
+        //就是一个3*3矩阵变换一个方向的计算公式 
 		return new IVector3(IntMath.Divide(axis_x.x * point.x + axis_y.x * point.y + axis_z.x * point.z, 1000) + trans.x, IntMath.Divide(axis_x.y * point.x + axis_y.y * point.y + axis_z.y * point.z, 1000) + trans.y, IntMath.Divide(axis_x.z * point.x + axis_y.z * point.y + axis_z.z * point.z, 1000) + trans.z);
 	}
 
@@ -326,7 +350,7 @@ public class IntMath
 		interPoint = IVector2.zero;
 		return false;
 	}
-
+    //射线检测法，一条经过点p平行于x轴的射线与每条线段交点个数，偶数为在外侧，奇数在内测
 	public static bool PointInPolygon(ref IVector2 pnt, IVector2[] plg)
 	{
 		if (plg == null || plg.Length < 3)

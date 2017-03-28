@@ -8225,8 +8225,14 @@ public static class IntSinCosTable
 
 	public static int getIndex(long nom, long den)
 	{
+        //分子乘以10000 以及 离散的数值的个数
 		nom *= (long)IntSinCosTable.NOM_MUL;
+        //分母是乘以2*PI 再乘以10000
 		den *= 62832L;
+        //这个式子拆开看就是
+        //nom/den 是一个小数， 2*PI / count是一个索引对应的数值大小
+        //所以 nom/den 再除以 2*PI/count，就可以获得索引值，
+        //上下乘以10000相当于除法在浮点层面精确到小数点后4位
 		int num = (int)(nom / den);
 		return num & IntSinCosTable.MASK;
 	}
